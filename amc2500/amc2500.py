@@ -87,7 +87,8 @@ class AMC2500:
         Set debug and/or trace if you want some info on stdout about
         what the controller is doing.
         """
-        self.ser = self._get_serial(port)
+        self.ser = serial.Serial(None, baudrate=9600)
+        self.ser.port = port
         self.ser.open()
         self.trace=trace
         self.debug=debug
@@ -148,7 +149,11 @@ class AMC2500:
         self._states.pop()
 
     def _get_serial(self, port):
-        return serial.Serial(port=port, baudrate=9600)
+        return serial.Serial(port=port, baudrate=9600, do_not_open=True) if hasattr(serial, 'PROTOCOL_BEFORE_VERSION') else serial.Serial(None, baudrate=9600)
+
+    def _open_serial(self, port):
+        self.ser.port = port
+        self.ser.open()
 
     def set_units(self, steps_per_unit):
         self._debug("Setting units to %d steps/unit" % steps_per_unit)
@@ -367,10 +372,10 @@ class AMC2500:
         """
         Move the axis to an absolute position x,y based on currently known position
         """
-        print "Moving to %.1f,%.1f" % (x,y)
+        print("Moving to %.1f,%.1f" % (x,y))
         (x_s, y_s) = self._units_to_steps(x), self._units_to_steps(y)
         (dx_s, dy_s) = (x_s-self.state.pos[0], y_s-self.state.pos[1])
-        print "Steps, moving %d,%d->%d,%d delta %d,%d" % (self.state.pos[0],self.state.pos[1],x_s,y_s,dx_s,dy_s)
+        print("Steps, moving %d,%d->%d,%d delta %d,%d" % (self.state.pos[0],self.state.pos[1],x_s,y_s,dx_s,dy_s))
         return self._move_by_steps(dx_s,dy_s)
 
     def arc_to(self, x, y, i, j, cw):
@@ -440,20 +445,20 @@ class AMC2500:
         self.set_speed(self.get_speed(), True)
 
     def _error(self, msg):
-        print "%s E %s" % (ts(), msg)
+        print("%s E %s" % (ts(), msg))
     
     def _debug(self, msg):
         if self.debug:
-            print "%s D %s" % (ts(), msg)
+            print("%s D %s" % (ts(), msg))
     
     def _write(self, cmd, response_timeout_s=None):
         CMD_SLEEP=0.01
         while self.ser.inWaiting() > 0:
             dumped = self.ser.read(self.ser.inWaiting())
-            print "WARNING dumping unexpected %d chars '%s'" % (len(dumped),dumped)
-        self.ser.write("%s\n" % cmd)
+            print("WARNING dumping unexpected %d chars '%s'" % (len(dumped),dumped))
+        self.ser.write(("%s\n" % cmd).encode())
         if self.trace:
-            print "%s W %s" % (ts(), cmd)
+            print("%s W %s" % (ts(), cmd))
         if response_timeout_s is None:
             time.sleep(CMD_SLEEP)
         else:
@@ -462,10 +467,10 @@ class AMC2500:
             ser.timeout = response_timeout_s
             rsp = []
             while 1:
-                ln = ser.readline()
+                ln = ser.readline().decode().strip()
                 rsp.append(ln)
                 if self.trace:
-                    print "%s R %s" % (ts(), ln)                
+                    print("%s R %s" % (ts(), ln))                
                 if ln.startswith("ER"):
                     self._debug("Error State")
                     self.reinitialise()
@@ -550,7 +555,7 @@ class FakeSerial:
             if move is None:
               move = re.search(_RE_CR, line)
 
-            print line
+            print(line)
             if move is not None:
                 move = move.groupdict()
                 dx = int(move["x"])
@@ -605,7 +610,7 @@ class FakeSerial:
     def read(self, size):
         buf = "\n".join(self.buffer)
         self.buffer = buf[size:].split("\n")
-        print "Returning %s remainder is %s" % (buf[:size], self.buffer)
+        print("Returning %s remainder is %s" % (buf[:size], self.buffer))
         return buf[:size]
 
     def inWaiting(self):
