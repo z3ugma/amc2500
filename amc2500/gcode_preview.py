@@ -21,7 +21,7 @@ def preview_command(args, context):
     try:
         command = COMMANDS[command]
     except KeyError:
-        print "WARNING: Command %s not supported for previewing" % command
+        print("WARNING: Command %s not supported for previewing" % command)
         return
     command(args, context)
 
@@ -50,7 +50,7 @@ def cmd_G94_feedrate_per_minute(args, context):
     pass
 
 def _draw_linear_move(args,context):
-    print args
+    print(args)
     prev_coords = (context["X"], context["Y"])
     for axis in "X", "Y", "Z": # update context to new position
         try:
@@ -66,11 +66,11 @@ def _draw_linear_move(args,context):
     dc = context["dc"]
     dc.SetBrush(wx.Brush(None, wx.TRANSPARENT))
     dc.SetPen(wx.Pen(colour, 1))
-    print "(%.2f, %.2f -> %.2f,%.2f)" % (prev_coords[0],prev_coords[1], context["X"],context["Y"])
+    print("(%.2f, %.2f -> %.2f,%.2f)" % (prev_coords[0],prev_coords[1], context["X"],context["Y"]))
     dc.DrawLine(prev_coords[0], prev_coords[1], context["X"], context["Y"])
 
 
 # make a dict from command name (ie G94) to command function (ie cmd_G94_feedrate_)
 COMMANDS = dict([(p[0].split("_")[1], p[1]) for p in globals().items() if p[0].startswith("cmd_")])
 
-print COMMANDS
+print(COMMANDS)
